@@ -1,0 +1,28 @@
+#version 420 core
+
+in vec3 param_world_normal; 
+in vec3 param_world_pos; 
+
+out vec4 fColor;
+
+uniform struct Light
+{
+	vec3 color;
+} light;
+
+vec3 get_light_color( vec3 Normal )
+{
+	vec3 light_dir = normalize( vec3(-1.0f, -0.25f, 0.5f) );
+	float ambient_light_intensity = 0.3f;
+	float directional_light_intensity = (1.0f + dot( -light_dir, param_world_normal )) / 2.0f;
+	directional_light_intensity *= (1.0f - ambient_light_intensity);
+	vec3 light = light.color * (ambient_light_intensity + directional_light_intensity);
+	return light;
+}
+
+void main(void)
+{
+	vec3 Normal = normalize(param_world_normal);
+	fColor = vec4( get_light_color( Normal ), 1.0f );
+	//fColor = vec4 (1, 0, 0, 1);
+}
