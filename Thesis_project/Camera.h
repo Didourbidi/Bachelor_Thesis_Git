@@ -64,8 +64,6 @@ namespace edt
 			else if (rotation.x < -85.0f)
 				rotation.x = -85.0f;
 
-			//rotation.x = fmodf(rotation.x, 360.0f);
-
 			rotation.y = fmodf(rotation.y, 360.0f);
 			rotation.z = fmodf(rotation.z, 360.0f);
 
@@ -81,20 +79,17 @@ namespace edt
 
 		Matrix get_view_matrix()
 		{
-			//:: neutral namespace (global function)
-			return edt::get_view_matrix(position, rotation);
+			//position and rotation are inverted (view matrix is the inverse transform of the camera)
+			Matrix view = MatMatMul(create_Rotation_ymat(-1 *rotation.y), create_Translation_mat(ScalarVecMul(-1.0f, position)));
+			view = MatMatMul(create_Rotation_xmat(-1 * rotation.x), view);
+			return view;
 		}
 
 		Matrix get_projection_matrix()
 		{
-			return edt::construct_perspective_matrix(FoV, far_clip, near_clip, aspect_ratio);
+			Matrix projection = construct_perspective_matrix(FoV, near_clip, far_clip,
+				(float)global.viewport.screen_width / (float)global.viewport.screen_height);
+			return projection;
 		}
-
-		Matrix get_view_matrix_without_translate()
-		{
-			//:: neutral namespace (global function)
-			return edt::get_view_matrix_without_translate(position, rotation);
-		}
-
 	};
 }

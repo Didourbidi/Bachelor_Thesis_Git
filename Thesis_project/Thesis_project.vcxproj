@@ -144,9 +144,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="algebra.cpp" />
+    <ClCompile Include="common.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="ObjFileLoader.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="VisibilitySolver3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algebra.h" />
@@ -155,6 +158,8 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mesh_bunny.h" />
     <ClInclude Include="ObjFileLoader.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="VisibilitySolver3D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
