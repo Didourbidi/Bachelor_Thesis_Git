@@ -1,0 +1,8 @@
+#version 420 core
+
+out float fColor;
+
+void main(void)
+{
+	fColor = 1.0f;
+}

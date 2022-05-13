@@ -23,7 +23,7 @@ namespace edt
 	private:
 		struct Pixel
 		{
-			uint8_t r, g, b, a;
+			uint8_t r;
 		};
 
 		void createRenderTargets();
@@ -31,6 +31,7 @@ namespace edt
 		Matrix updateViewMatrix(const Matrix& mat, const Matrix& translation_matrix);
 		void createProjectionMatrix();
 		bool testMachineVisibility(MeshInstance* machine);
+		void calculateLastMipLevel();
 
 		GLuint render_target;
 		GLuint depth_buffer;
@@ -42,6 +43,7 @@ namespace edt
 		Matrix round_view[6];
 		Matrix projection_matrix;
 		std::vector<Pixel> texture_data;
+		size_t last_mip_resolution;
 		GLint mip_level;
 	};
 }

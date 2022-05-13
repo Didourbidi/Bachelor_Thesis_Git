@@ -3,7 +3,7 @@
 
 namespace edt
 {
-	void Renderer::createMeshDeviceResource(Mesh& mesh)
+	void Renderer::createMeshDeviceResource(Mesh& mesh )
 	{
 		int data_size_positions = mesh.geometry.positions.size() * sizeof(Vector);
 		int data_size_normals = mesh.geometry.normals.size() * sizeof(Vector);
@@ -18,7 +18,9 @@ namespace edt
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.vertex_buffer_object);
 		glBufferData(GL_ARRAY_BUFFER, data_size_positions + data_size_normals, NULL, GL_STATIC_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, data_size_positions, (void*)mesh.geometry.positions.data());
-		glBufferSubData(GL_ARRAY_BUFFER, data_size_positions, data_size_normals, (void*)mesh.geometry.normals.data());
+
+		if( data_size_normals )
+			glBufferSubData(GL_ARRAY_BUFFER, data_size_positions, data_size_normals, (void*)mesh.geometry.normals.data());
 
 		// Allocate index buffer and load mesh indices
 		glGenBuffers(1, &mesh.index_buffer_object);
@@ -31,9 +33,12 @@ namespace edt
 		glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
 		// Define the format of the vertex data 
-		GLint vNorm = glGetAttribLocation(mesh.material.shader_id, "vNorm");
-		glEnableVertexAttribArray(vNorm);
-		glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, (void*)data_size_positions);
+		if (data_size_normals)
+		{
+			GLint vNorm = glGetAttribLocation(mesh.material.shader_id, "vNorm");
+			glEnableVertexAttribArray(vNorm);
+			glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, (void*)data_size_positions);
+		}
 
 		glBindVertexArray(0);
 	}
@@ -53,6 +58,8 @@ namespace edt
 		//position and rotation are inverted (view matrix is the inverse transform of the camera)
 
 		model_transform = create_Translation_mat(mesh_instance.translation);
+
+		model_transform = MatMatMul(model_transform, create_Scaling_mat(mesh_instance.scaling));
 
 		model_transform = MatMatMul(model_transform, create_Rotation_xmat(mesh_instance.rotation.x));
 		model_transform = MatMatMul(model_transform, create_Rotation_ymat(mesh_instance.rotation.y));

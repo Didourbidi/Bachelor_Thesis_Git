@@ -34,7 +34,6 @@ namespace edt
 	struct MeshInstance
 	{
 		Mesh* model;
-
 		Vector translation;
 		Vector rotation;
 		Vector scaling;

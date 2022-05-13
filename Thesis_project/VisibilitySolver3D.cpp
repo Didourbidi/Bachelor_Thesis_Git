@@ -3,16 +3,19 @@
 
 namespace edt
 {
+	
 	VisibilitySolver3D::VisibilitySolver3D() : //constructor definition
 		render_target(0),
 		depth_buffer(0),
 		frame_buffer(0),
 		renderer(nullptr),
-		mip_level(0)
+		mip_level(0),
+		last_mip_resolution(16)
 	{
 		draw_buffers[0] = GL_COLOR_ATTACHMENT0;
 		createProjectionMatrix();
 		createViewMatrices();
+		static_assert(sizeof(VisibilitySolver3D::Pixel) == sizeof(uint8_t) && alignof(VisibilitySolver3D::Pixel) == alignof(uint8_t));
 	}
 
 	VisibilitySolver3D::~VisibilitySolver3D(){} //destructor definition
@@ -21,6 +24,8 @@ namespace edt
 	{
 		this->resolution = resolution;
 		this->renderer = renderer;
+
+		calculateLastMipLevel();
 		createRenderTargets();
 	}
 
@@ -42,7 +47,7 @@ namespace edt
 			machine->is_visible = false;
 
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target, 0);
-		texture_data.resize(global.visibility_test_rt_size * global.visibility_test_rt_size, { 0, 0, 0, 0 });
+		texture_data.resize(last_mip_resolution * last_mip_resolution, { 0 });
 
 		for (Matrix& rotation_mat : round_view)
 		{
@@ -52,6 +57,9 @@ namespace edt
 			glDepthMask(GL_TRUE);
 			glClear(GL_DEPTH_BUFFER_BIT);
 
+			if( !walls.empty() )
+				renderer->setActiveShader(walls.front()->model->material.shader_id);
+
 			for (MeshInstance* wall : walls)
 			{
 				renderer->renderMesh(*wall);
@@ -59,6 +67,9 @@ namespace edt
 
 			glClear(GL_COLOR_BUFFER_BIT); //clear only colors
 			glDepthMask(GL_FALSE);
+
+			if (!machines.empty())
+				renderer->setActiveShader(machines.front()->model->material.shader_id);
 
 			for (MeshInstance* machine : machines)
 			{
@@ -82,8 +93,8 @@ namespace edt
 			return false;
 		
 		renderer->renderMesh(*machine);
-		//glActiveTexture(GL_TEXTURE0);
-		//glGenerateMipmap(GL_TEXTURE_2D); //auto-generate mipmap
+		glActiveTexture(GL_TEXTURE0);
+		glGenerateMipmap(GL_TEXTURE_2D); //auto-generate mipmap
 		/*
 		glGetTextureLevelParameteriv(render_targets[0],
 			mip_level,
@@ -94,13 +105,13 @@ namespace edt
 		glBindTexture(GL_TEXTURE_2D, render_target);
 
 		glGetTexImage(GL_TEXTURE_2D,
-			0,
-			GL_RGB,
+			mip_level,
+			GL_RED,
 			GL_UNSIGNED_BYTE,
 			texture_data.data());
 
 		for (const Pixel& pixel : texture_data)
-			if (pixel.g)
+			if (pixel.r)
 			{
 				machine->is_visible = true;
 				break;
@@ -117,7 +128,6 @@ namespace edt
 	void VisibilitySolver3D::createRenderTargets()
 	{
 		glGenFramebuffers(1, &frame_buffer);
-		//glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
 
 		{
 			// The texture we're going to render to
@@ -127,8 +137,7 @@ namespace edt
 			glBindTexture(GL_TEXTURE_2D, render_target);
 
 			// Give an empty image to OpenGL ( the last "0" )
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, global.visibility_test_rt_size, global.visibility_test_rt_size,
-				0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, resolution, resolution, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
 			glGenerateMipmap(GL_TEXTURE_2D);
 
 			// Poor filtering. Needed !
@@ -139,10 +148,7 @@ namespace edt
 		// The depth buffer
 		glGenRenderbuffers(1, &depth_buffer);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.visibility_test_rt_size, global.visibility_test_rt_size);
-		//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-
-		//glDrawBuffers(1, draw_buffers); // "1" is the size of DrawBuffers
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, resolution, resolution);
 	}
 
 	void VisibilitySolver3D::createViewMatrices()
@@ -169,5 +175,15 @@ namespace edt
 	void VisibilitySolver3D::createProjectionMatrix()
 	{
 		projection_matrix = construct_perspective_matrix(90.0f, 0.1f, 1000.0f, 1.0f);
+	}
+
+	void VisibilitySolver3D::calculateLastMipLevel()
+	{
+		int last_mip_size = resolution;
+		while (last_mip_size > last_mip_resolution)
+		{
+			last_mip_size /= 2;
+			mip_level++;
+		}
 	}
 }

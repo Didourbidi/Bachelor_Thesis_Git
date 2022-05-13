@@ -28,8 +28,8 @@ namespace edt
 
 		struct
 		{
-			GLuint wall;
-			GLuint machine;
+			GLuint rgb;
+			GLuint monochrome;
 		} shaders;
 
 	} global;

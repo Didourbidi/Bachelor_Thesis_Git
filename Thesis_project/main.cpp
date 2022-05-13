@@ -6,6 +6,7 @@
 #include "mesh_bunny.h"
 #include "Renderer.h"
 #include "VisibilitySolver3D.h"
+#include "SceneGenerator.h"
 
 namespace edt
 {
@@ -15,13 +16,24 @@ namespace edt
 
 #pragma warning( pop )
 
-	Camera camera({ 0.0f, 0.0f, 0.0f },{0, 0, 0 }, 60, 1, 10000, 1.0f ); //global camera parameters
+	Camera camera({ 0.0f, 0.0f, 0.0f },{0, 0, 0 }, 60, 0.1f, 10000, 1.0f ); //global camera parameters
 	int last_mouse_pos[] = { 0 , 0 };
+
+	struct 
+	{
+		Mesh* room[2];
+		Mesh* inner_wall_1[2];
+		Mesh* l_shape[2];
+		Mesh* machine1[2];
+	} meshes;
 
 	std::vector<MeshInstance*> walls;
 	std::vector<MeshInstance*> machines;
+	std::vector<MeshInstance*> walls_monochrome;
+	std::vector<MeshInstance*> machines_monochrome;
 	Renderer renderer;
 	VisibilitySolver3D solver_3d;
+	SceneGenerator scene_generator;
 
 	// Global transform matrices
 	struct 
@@ -29,67 +41,32 @@ namespace edt
 		Matrix view, projection, projection_view;
 	} global_matrices;
 
-	void loadWalls()
+	bool loadMesh(const char* path, Mesh** meshes_out)
 	{
-		Mesh* mesh = new Mesh();
-		
-		bool result = loadOBJ("Models/empty_room.obj", mesh->geometry.positions, &mesh->geometry.normals);
+		Mesh* mesh_rgb = new Mesh();
+
+		bool result = loadOBJ(path, mesh_rgb->geometry.positions, &mesh_rgb->geometry.normals);
 		if (!result)
-			return;
-		
-		for (unsigned short i = 0; i < mesh->geometry.positions.size(); i += 3)
-			mesh->geometry.triangles.push_back({ i, i + 1u, i + 2u });
+			return false;
 
-		mesh->material.shader_id = global.shaders.wall;
+		for (unsigned short i = 0; i < mesh_rgb->geometry.positions.size(); i += 3)
+			mesh_rgb->geometry.triangles.push_back({ i, i + 1u, i + 2u });
 
-		renderer.createMeshDeviceResource(*mesh);
+		mesh_rgb->material.shader_id = global.shaders.rgb;
+		renderer.createMeshDeviceResource(*mesh_rgb);
 
-		MeshInstance* instance = new MeshInstance();
-		instance->model = mesh;
-		instance->translation = { 0,0,0 };
-		instance->rotation = { 0,0,0 };
-		instance->scaling = { 1,1,1 };
+		meshes_out[0] = mesh_rgb;
 
-		walls.push_back(instance);
-	}
+		Mesh* mesh_monochrome = new Mesh();
+		mesh_monochrome->geometry.positions = mesh_rgb->geometry.positions;
+		mesh_monochrome->geometry.triangles = mesh_rgb->geometry.triangles;
+		mesh_monochrome->material.shader_id = global.shaders.monochrome;
 
-	void loadMachines()
-	{
-		Mesh* mesh = new Mesh();
+		renderer.createMeshDeviceResource(*mesh_monochrome);
 
-		bool result = loadOBJ("Models/Lshape.obj", mesh->geometry.positions, &mesh->geometry.normals);
-		if (!result)
-			return;
+		meshes_out[1] = mesh_monochrome;
 
-		for (unsigned short i = 0; i < mesh->geometry.positions.size(); i += 3)
-			mesh->geometry.triangles.push_back({ i, i + 1u, i + 2u });
-
-		mesh->material.shader_id = global.shaders.wall;
-
-		renderer.createMeshDeviceResource(*mesh);
-
-		for (size_t i = 0; i < 1; i++)
-		{
-			MeshInstance* instance = new MeshInstance();
-			instance->model = mesh;
-			instance->translation = { 0,0,0 };
-			instance->rotation = { 0,0,0 };
-			instance->scaling = { 1,1,1 };
-
-			machines.push_back(instance);
-		}
-
-		machines[0]->translation = { 5, 1, 10 };
-		machines[0]->rotation = { 0, 30, 0 };
-		machines[0]->scaling = { 0.5f, 1.0f ,0.5f };
-		/*
-		global.machines[1]->translation = { -12, 1, 6 };
-		global.machines[1]->rotation = { 0, -10, 0 };
-		global.machines[1]->scaling = { 0.3f, 1.0f ,0.3f };
-
-		global.machines[2]->translation = { 7, 1, -5 };
-		global.machines[2]->rotation = { 0, 75, 0 };
-		global.machines[2]->scaling = { 0.7f, 1.0f ,0.7f };*/
+		return true;
 	}
 
 	void renderWalls()
@@ -101,7 +78,7 @@ namespace edt
 		renderer.setActiveShader(shader_id);
 		
 		{
-			renderer.send_float3_to_shader("light.color", { 0.0f , 0.0f , 1.0f });
+			renderer.send_float3_to_shader("material.color", { 0.6f , 0.6f , 0.6f });
 		}
 
 		for (MeshInstance* mesh_instance : walls)
@@ -120,9 +97,10 @@ namespace edt
 		renderer.setActiveShader(shader_id);
 
 		Vector visible_color = { 0.0f , 1.0f , 0.0f }, obscured_color = { 1.0f , 0.0f , 0.0f };
-		for (MeshInstance* mesh_instance : machines)
+		for (int i = 0 ; i<(int)machines.size(); i++ )
 		{
-			renderer.send_float3_to_shader("light.color", mesh_instance->is_visible ? visible_color : obscured_color );
+			MeshInstance* mesh_instance = machines[i];
+			renderer.send_float3_to_shader("material.color", machines_monochrome[i]->is_visible ? visible_color : obscured_color );
 			renderer.renderMesh(*mesh_instance);
 		}
 	}
@@ -153,7 +131,7 @@ namespace edt
 
 	void update()
 	{
-		solver_3d.runVisibilityTest(walls, machines, camera.position);
+		solver_3d.runVisibilityTest(walls_monochrome, machines_monochrome, camera.position);
 		drawScene();
 	}
 
@@ -225,12 +203,9 @@ namespace edt
 
 	void mouse_button_pressed(int button, int state, int mouse_x_pos, int mouse_y_pos)
 	{
-		if (button == 0)
-		{
-			//cout << "button " << button << " state " << state << " mouse_x_pos " << mouse_x_pos << " mouse_y_pos " << mouse_y_pos << "\n" << "\n";
-			last_mouse_pos[0] = mouse_x_pos;
-			last_mouse_pos[1] = mouse_y_pos;
-		}
+		//cout << "button " << button << " state " << state << " mouse_x_pos " << mouse_x_pos << " mouse_y_pos " << mouse_y_pos << "\n" << "\n";
+		last_mouse_pos[0] = mouse_x_pos;
+		last_mouse_pos[1] = mouse_y_pos;
 	}
 
 
@@ -238,10 +213,15 @@ namespace edt
 	void init(void) 
 	{
 		// Compile and link the given shader program (vertex shader and fragment shader)
-		renderer.loadShaderProgram("Shaders/vertex_shader_wall.txt", "Shaders/fragment_shader_wall.txt", global.shaders.wall);
-		loadWalls();
-		loadMachines();
+		renderer.loadShaderProgram("Shaders/vertex_shader_rgb.txt", "Shaders/fragment_shader_rgb.txt", global.shaders.rgb);
+		renderer.loadShaderProgram("Shaders/vertex_shader_monochrome.txt", "Shaders/fragment_shader_monochrome.txt", global.shaders.monochrome);
+		loadMesh("Models/machine1.obj", meshes.machine1);
+		loadMesh("Models/test_room.obj", meshes.room);
+		loadMesh("Models/Lshape.obj", meshes.l_shape);
+		loadMesh("Models/inner_wall.obj", meshes.inner_wall_1);
+
 		solver_3d.init(&renderer, global.visibility_test_rt_size);
+		scene_generator.generateScene(meshes.room, meshes.inner_wall_1, meshes.l_shape, meshes.machine1, walls, walls_monochrome, machines, machines_monochrome);
 	}
 
 	void cleanUp(void) 

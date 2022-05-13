@@ -90,6 +90,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)External\glew\include\GL;$(SolutionDir)External\freeglut\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +150,7 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="ObjFileLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SceneGenerator.cpp" />
     <ClCompile Include="VisibilitySolver3D.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +161,7 @@
     <ClInclude Include="mesh_bunny.h" />
     <ClInclude Include="ObjFileLoader.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SceneGenerator.h" />
     <ClInclude Include="VisibilitySolver3D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
