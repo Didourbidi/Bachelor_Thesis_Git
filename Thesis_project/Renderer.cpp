@@ -54,20 +54,9 @@ namespace edt
 			shader_dirty = false;
 		}
 
-		Matrix model_transform;
-		//position and rotation are inverted (view matrix is the inverse transform of the camera)
-
-		model_transform = create_Translation_mat(mesh_instance.translation);
-
-		model_transform = MatMatMul(model_transform, create_Scaling_mat(mesh_instance.scaling));
-
-		model_transform = MatMatMul(model_transform, create_Rotation_xmat(mesh_instance.rotation.x));
-		model_transform = MatMatMul(model_transform, create_Rotation_ymat(mesh_instance.rotation.y));
-		model_transform = MatMatMul(model_transform, create_Rotation_zmat(mesh_instance.rotation.z));
-
 		//send model_matrix to shader (graphics card)
 		GLint loc_model_mat = glGetUniformLocation(mesh_instance.model->material.shader_id, "model_matrix");
-		glUniformMatrix4fv(loc_model_mat, 1, GL_FALSE, model_transform.e);
+		glUniformMatrix4fv(loc_model_mat, 1, GL_FALSE, mesh_instance.transform.e);
 
 		// Select current resources 
 		glBindVertexArray(mesh_instance.model->vertex_array_object);
@@ -75,7 +64,26 @@ namespace edt
 		// Draw all triangles
 		glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL);
 		glBindVertexArray(0);
+	}
 
+	void Renderer::renderMeshInstances(const MeshInstance& mesh_instance, const int& count)
+	{
+		if (matrices_dirty)
+			calculateProjViewMatrix();
+
+		if (shader_dirty)
+		{
+			applyGlobalMatrices();
+			shader_dirty = false;
+		}
+
+		// Select current resources 
+		glBindVertexArray(mesh_instance.model->vertex_array_object);
+
+		// Draw all triangles
+		//glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL);
+		glDrawElementsInstanced(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL, count);
+		glBindVertexArray(0);
 	}
 
 	//send 
@@ -95,6 +103,12 @@ namespace edt
 
 		//send information to shader
 		glUniform1f(h_handle, value);
+	}
+
+	void Renderer::send_matrices_to_shader(const char* name, const Matrix* p_values, const int& count)
+	{
+		GLint h_handle = glGetUniformLocation(shader_id, name);
+		glUniformMatrix4fv(h_handle, count, false, p_values->e);
 	}
 
 	//take info from txt file to create shader

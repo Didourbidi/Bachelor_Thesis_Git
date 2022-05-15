@@ -37,8 +37,11 @@ namespace edt
 		Vector translation;
 		Vector rotation;
 		Vector scaling;
+		Matrix transform;
 
 		bool is_visible;
 		//unsigned int vertex_buffer_object, index_buffer_object, vertex_array_object; // OpenGL handles for rendering
+
+		void calculateTransform();
 	};
 }

@@ -43,7 +43,7 @@ namespace edt
 		Matrix round_view[6];
 		Matrix projection_matrix;
 		std::vector<Pixel> texture_data;
-		size_t last_mip_resolution;
+		int last_mip_resolution;
 		GLint mip_level;
 	};
 }

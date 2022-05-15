@@ -16,7 +16,7 @@ namespace edt
 
 #pragma warning( pop )
 
-	Camera camera({ 0.0f, 0.0f, 0.0f },{0, 0, 0 }, 60, 0.1f, 10000, 1.0f ); //global camera parameters
+	Camera camera({ 0.0f, 1.0f, 0.0f },{0, 0, 0 }, 60, 0.1f, 10000, 1.0f ); //global camera parameters
 	int last_mouse_pos[] = { 0 , 0 };
 
 	struct 
@@ -216,7 +216,7 @@ namespace edt
 		renderer.loadShaderProgram("Shaders/vertex_shader_rgb.txt", "Shaders/fragment_shader_rgb.txt", global.shaders.rgb);
 		renderer.loadShaderProgram("Shaders/vertex_shader_monochrome.txt", "Shaders/fragment_shader_monochrome.txt", global.shaders.monochrome);
 		loadMesh("Models/machine1.obj", meshes.machine1);
-		loadMesh("Models/test_room.obj", meshes.room);
+		loadMesh("Models/floor.obj", meshes.room);
 		loadMesh("Models/Lshape.obj", meshes.l_shape);
 		loadMesh("Models/inner_wall.obj", meshes.inner_wall_1);
 

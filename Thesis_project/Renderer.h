@@ -10,8 +10,10 @@ namespace edt
 	public:
 		void createMeshDeviceResource(Mesh& mesh);
 		void renderMesh(const MeshInstance& mesh_instance);
+		void renderMeshInstances(const MeshInstance& mesh_instance, const int& count);
 		void send_float3_to_shader(const char* name, const Vector& value);
 		void send_float_to_shader(const char* name, const float& value);
+		void send_matrices_to_shader(const char* name, const Matrix* p_values, const int& count);
 
 		bool loadShaderProgram(const char* vs_filename, const char* fs_filename, GLuint& shader_id);
 

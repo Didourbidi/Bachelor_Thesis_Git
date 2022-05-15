@@ -1,5 +1,6 @@
 #include "VisibilitySolver3D.h"
 #include "Renderer.h"
+#include <assert.h>
 
 namespace edt
 {
@@ -40,11 +41,18 @@ namespace edt
 		//use custom depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
 		glDrawBuffers(1, draw_buffers); // "1" is the size of DrawBuffers
-		
-		int number_of_non_visible_machines = machines.size(); //there is no point to run the test if all machines are visible
+		glDepthFunc(GL_LESS); //when there are two surfaces at the same depth only the new one is drawn
 
-		for (MeshInstance* machine : machines)
+		int number_of_non_visible_machines = machines.size(); //there is no point to run the test if all machines are visible
+		std::vector<Matrix> instance_transforms(machines.size()); //it is harcoded to 1000 in the shader
+		//assert(machines.size() <= instance_transforms.size());
+
+		for (size_t i=0; i<machines.size(); i++)
+		{
+			MeshInstance* machine = machines[i];
+			::memcpy(instance_transforms.data() + i, &machine->transform, sizeof(Matrix));
 			machine->is_visible = false;
+		}
 
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target, 0);
 		texture_data.resize(last_mip_resolution * last_mip_resolution, { 0 });
@@ -56,7 +64,7 @@ namespace edt
 
 			glDepthMask(GL_TRUE);
 			glClear(GL_DEPTH_BUFFER_BIT);
-
+			//for wall occlusion
 			if( !walls.empty() )
 				renderer->setActiveShader(walls.front()->model->material.shader_id);
 
@@ -65,7 +73,23 @@ namespace edt
 				renderer->renderMesh(*wall);
 			}
 
+			//for machine occlusion
+			if (!machines.empty())
+			{
+				renderer->setActiveShader(machines.front()->model->material.shader_id);
+				for(int i_machine = 0; i_machine < machines.size(); i_machine += 255) //255 is the limit for opengl instancing
+				{
+					int nr_of_machines = 255;
+					if (i_machine + nr_of_machines > machines.size())
+						nr_of_machines = machines.size() - i_machine;
+
+					renderer->send_matrices_to_shader("model_matrix", instance_transforms.data() + i_machine, nr_of_machines);
+					renderer->renderMeshInstances(*machines.front(), nr_of_machines);
+				}
+			}
+
 			glClear(GL_COLOR_BUFFER_BIT); //clear only colors
+			glDepthFunc(GL_LEQUAL);
 			glDepthMask(GL_FALSE);
 
 			if (!machines.empty())
@@ -114,14 +138,10 @@ namespace edt
 			if (pixel.r)
 			{
 				machine->is_visible = true;
-				break;
+				glClear(GL_COLOR_BUFFER_BIT);
+				return true;
 			}
 
-		if (machine->is_visible)
-		{
-			glClear(GL_COLOR_BUFFER_BIT);
-			return true;
-		}
 		return false;
 	}
 
