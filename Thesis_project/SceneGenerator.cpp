@@ -11,7 +11,7 @@ namespace edt
 		float grid_size = 100; //number of squares
 		size_t number_of_squares = (size_t)(grid_size * grid_size);
 		size_t wanted_nr_of_machines = 2 * (size_t) (number_of_squares * 0.5f);
-		//size_t wanted_nr_of_machines = 2;
+		//size_t wanted_nr_of_machines = 10;
 		float grid_square_size = 16; //meters
 		const Vector square_center_position_min = {-grid_square_size * (grid_size * 0.5f - 0.5f), 0.0f, -grid_square_size * (grid_size * 0.5f - 0.5f) }; 
 		Vector square_center_position = square_center_position_min;
@@ -31,12 +31,14 @@ namespace edt
 
 		auto create_machine_1 = [&l_shape_mesh, &machines_rgb, &machines_monochrome](const Vector& offset)
 		{
-			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 2, 0, -6 }), { 0, 30, 0 }, { 1.0f, 1.5f, 1.0f }, machines_rgb, machines_monochrome);
+			float y_rot = -180.0f + rand() % 360; // random rotation around Y.
+			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 2, 0, -6 }), { 0, y_rot, 0 }, { 1.0f, 1.5f, 1.0f }, machines_rgb, machines_monochrome);
 		};
 
 		auto create_machine_2 = [&l_shape_mesh, &machines_rgb, &machines_monochrome](const Vector& offset)
 		{
-			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 6, 0, -4 }), { 0, -90, 0 }, { 0.5f, 0.5f, 0.5f }, machines_rgb, machines_monochrome);
+			float y_rot = -180.0f + rand() % 360; // random rotation around Y.
+			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 6, 0, -4 }), { 0, y_rot, 0 }, { 0.5f, 0.5f, 0.5f }, machines_rgb, machines_monochrome);
 		};
 
 		for(float i_x = 0; i_x <grid_size; i_x++)

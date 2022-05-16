@@ -7,6 +7,8 @@
 #include "Renderer.h"
 #include "VisibilitySolver3D.h"
 #include "SceneGenerator.h"
+#include "SingleSceneRenderer.h"
+#include "PanoramicSceneRenderer.h"
 
 namespace edt
 {
@@ -16,7 +18,7 @@ namespace edt
 
 #pragma warning( pop )
 
-	Camera camera({ 0.0f, 1.0f, 0.0f },{0, 0, 0 }, 60, 0.1f, 10000, 1.0f ); //global camera parameters
+	Camera camera({ 0.0f, 1.0f, 0.0f },{0, 0, 0 }, 90, 0.1f, 10000, 1.0f ); //global camera parameters
 	int last_mouse_pos[] = { 0 , 0 };
 
 	struct 
@@ -34,12 +36,10 @@ namespace edt
 	Renderer renderer;
 	VisibilitySolver3D solver_3d;
 	SceneGenerator scene_generator;
+	SingleSceneRenderer single_scene_renderer;
+	PanoramicSceneRenderer panoramic_scene_renderer;
 
-	// Global transform matrices
-	struct 
-	{
-		Matrix view, projection, projection_view;
-	} global_matrices;
+	bool is_single_scene_view = true;
 
 	bool loadMesh(const char* path, Mesh** meshes_out)
 	{
@@ -69,64 +69,12 @@ namespace edt
 		return true;
 	}
 
-	void renderWalls()
-	{
-		if (walls.empty())
-			return;
-
-		const GLuint& shader_id = walls.front()->model->material.shader_id;
-		renderer.setActiveShader(shader_id);
-		
-		{
-			renderer.send_float3_to_shader("material.color", { 0.6f , 0.6f , 0.6f });
-		}
-
-		for (MeshInstance* mesh_instance : walls)
-		{
-			renderer.renderMesh(*mesh_instance);
-		}
-	}
-
-	void renderMachines()
-	{
-		if (machines.empty())
-			return;
-
-		const GLuint& shader_id = machines.front()->model->material.shader_id;
-
-		renderer.setActiveShader(shader_id);
-
-		Vector visible_color = { 0.0f , 1.0f , 0.0f }, obscured_color = { 1.0f , 0.0f , 0.0f };
-		for (int i = 0 ; i<(int)machines.size(); i++ )
-		{
-			MeshInstance* mesh_instance = machines[i];
-			renderer.send_float3_to_shader("material.color", machines_monochrome[i]->is_visible ? visible_color : obscured_color );
-			renderer.renderMesh(*mesh_instance);
-		}
-	}
-
 	void drawScene() 
 	{
-		renderer.setViewMatrix(camera.get_view_matrix());
-		renderer.setProjectionMatrix(camera.get_projection_matrix());
-
-		// Undo the settings of the visibility test.
-		glDrawBuffer(GL_BACK);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-		glDepthMask(GL_TRUE); //enable to write to depth buffer
-
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-		//Z BUFFER
-		//enable zbuffer
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
-		//Compare depth
-		glDepthFunc(GL_LESS);
-
-		renderWalls();
-		renderMachines();
-		glFlush();
+		if (is_single_scene_view)
+			single_scene_renderer.drawScene(walls, machines, machines_monochrome);
+		else
+			panoramic_scene_renderer.drawScene(walls, machines, machines_monochrome);
 	}
 
 	void update()
@@ -172,6 +120,9 @@ namespace edt
 		case 'e':
 			pos_adj.y = -position_step;
 			break;
+		case 't':
+			is_single_scene_view = !is_single_scene_view;
+			break;
 		case 'Q':
 			glutLeaveMainLoop();
 			break;
@@ -208,8 +159,6 @@ namespace edt
 		last_mouse_pos[1] = mouse_y_pos;
 	}
 
-
-
 	void init(void) 
 	{
 		// Compile and link the given shader program (vertex shader and fragment shader)
@@ -222,6 +171,8 @@ namespace edt
 
 		solver_3d.init(&renderer, global.visibility_test_rt_size);
 		scene_generator.generateScene(meshes.room, meshes.inner_wall_1, meshes.l_shape, meshes.machine1, walls, walls_monochrome, machines, machines_monochrome);
+		single_scene_renderer.init(&renderer, edt::global.viewport.screen_width, edt::global.viewport.screen_height, &camera);
+		panoramic_scene_renderer.init(&renderer, edt::global.viewport.screen_width, edt::global.viewport.screen_height, &camera);
 	}
 
 	void cleanUp(void) 

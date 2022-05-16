@@ -53,7 +53,7 @@ namespace edt
 		void rotate(Vector rotation_adjustment)
 		{
 			rotation = Add(rotation, rotation_adjustment);
-			rotation_fixer();
+			//rotation_fixer();
 		}
 
 		void rotation_fixer()
@@ -77,7 +77,7 @@ namespace edt
 			up_direction = CrossProduct(right_direction, forward_direction);
 		}
 
-		Matrix get_view_matrix()
+		Matrix get_view_matrix() const 
 		{
 			//position and rotation are inverted (view matrix is the inverse transform of the camera)
 			Matrix view = MatMatMul(create_Rotation_ymat(-1 *rotation.y), create_Translation_mat(ScalarVecMul(-1.0f, position)));
@@ -85,7 +85,7 @@ namespace edt
 			return view;
 		}
 
-		Matrix get_projection_matrix()
+		Matrix get_projection_matrix() const
 		{
 			Matrix projection = construct_perspective_matrix(FoV, near_clip, far_clip,
 				(float)global.viewport.screen_width / (float)global.viewport.screen_height);
