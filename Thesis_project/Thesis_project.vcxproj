@@ -169,6 +169,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SceneGenerator.cpp" />
     <ClCompile Include="SingleSceneRenderer.cpp" />
+    <ClCompile Include="VisibilitySolver2D.cpp" />
     <ClCompile Include="VisibilitySolver3D.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -182,6 +183,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SceneGenerator.h" />
     <ClInclude Include="SingleSceneRenderer.h" />
+    <ClInclude Include="VisibilitySolver2D.h" />
     <ClInclude Include="VisibilitySolver3D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -37,6 +37,9 @@
     <ClCompile Include="PanoramicSceneRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VisibilitySolver2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algebra.h">
@@ -70,6 +73,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="PanoramicSceneRenderer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VisibilitySolver2D.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

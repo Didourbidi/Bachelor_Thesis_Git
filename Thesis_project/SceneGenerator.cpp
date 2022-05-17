@@ -2,12 +2,60 @@
 #include "mesh.h"
 #include "algebra.h"
 
+#include <fstream>
+
 namespace edt
 {
+	bool SceneGenerator::Vector2::operator == (const Vector2& rhs) const 
+	{ 
+		return x == rhs.x && y == rhs.y; 
+	}
+
+	SceneGenerator::Vector2 SceneGenerator::Vector2::operator + (const Vector2& rhs) const
+	{
+		return { x + rhs.x, y + rhs.y };
+	}
+
+	void SceneGenerator::Vector2::operator += (const Vector2& rhs)
+	{
+		x += rhs.x;
+		y += rhs.y;
+	}
+
+	SceneGenerator::Vector2 SceneGenerator::Vector2::operator - (const Vector2& rhs) const
+	{
+		return { x - rhs.x, y - rhs.y };
+	}
+
+	void SceneGenerator::Vector2::operator /= (const float& rhs)
+	{
+		x /= rhs;
+		y /= rhs;
+	}
+
+	void SceneGenerator::Vector2::normalize()
+	{
+		float length = sqrtf(x * x + y * y);
+		x /= length;
+		y /= length;
+	}
+
+	float SceneGenerator::Vector2::cross(const Vector2& rhs) const
+	{
+		float v = x * rhs.y - y * rhs.x;
+		return v;
+	}
+
+	float SceneGenerator::Vector2::distanceSq(const Vector2& rhs) const
+	{
+		return x * x + y * y;
+	}
+
 	void SceneGenerator::generateScene(Mesh** room_mesh, Mesh** inner_wall_mesh, Mesh** l_shape_mesh, Mesh** machine1_mesh,
 		std::vector<MeshInstance*>& walls_rgb, std::vector<MeshInstance*>& walls_monochrome, std::vector<MeshInstance*>& machines_rgb,
 		std::vector<MeshInstance*>& machines_monochrome)
 	{
+		srand(1);
 		float grid_size = 100; //number of squares
 		size_t number_of_squares = (size_t)(grid_size * grid_size);
 		size_t wanted_nr_of_machines = 2 * (size_t) (number_of_squares * 0.5f);
@@ -29,16 +77,21 @@ namespace edt
 			}
 		}
 
-		auto create_machine_1 = [&l_shape_mesh, &machines_rgb, &machines_monochrome](const Vector& offset)
+		std::vector<unsigned char> mesh_types(wanted_nr_of_machines);
+		std::vector<Vector> mesh_scalings = { { 1.0f, 1.5f, 1.0f } , { 0.5f, 0.5f, 0.5f } };
+
+		auto create_machine_1 = [&l_shape_mesh, &machines_rgb, &machines_monochrome, &mesh_types, &mesh_scalings](const Vector& offset)
 		{
+			mesh_types[machines_monochrome.size()] = 0;
 			float y_rot = -180.0f + rand() % 360; // random rotation around Y.
-			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 2, 0, -6 }), { 0, y_rot, 0 }, { 1.0f, 1.5f, 1.0f }, machines_rgb, machines_monochrome);
+			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 2, 0, -6 }), { 0, y_rot, 0 }, mesh_scalings[0], machines_rgb, machines_monochrome);
 		};
 
-		auto create_machine_2 = [&l_shape_mesh, &machines_rgb, &machines_monochrome](const Vector& offset)
+		auto create_machine_2 = [&l_shape_mesh, &machines_rgb, &machines_monochrome, &mesh_types, &mesh_scalings](const Vector& offset)
 		{
+			mesh_types[machines_monochrome.size()] = 1;
 			float y_rot = -180.0f + rand() % 360; // random rotation around Y.
-			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 6, 0, -4 }), { 0, y_rot, 0 }, { 0.5f, 0.5f, 0.5f }, machines_rgb, machines_monochrome);
+			SceneGenerator::createMeshInstance(l_shape_mesh, Add(offset, { 6, 0, -4 }), { 0, y_rot, 0 }, mesh_scalings[1], machines_rgb, machines_monochrome);
 		};
 
 		for(float i_x = 0; i_x <grid_size; i_x++)
@@ -80,6 +133,60 @@ namespace edt
 		create_machine_cluster({ -10, 0, -10 });
 		create_machine_cluster({ -10, 0, 10 });*/
 
+		saveScene(machines_monochrome, mesh_types, mesh_scalings);
+	}
+
+	void SceneGenerator::loadScene(const char* file_name)
+	{
+		std::vector<Vector2> hull;
+
+		std::ifstream scene_file(file_name, std::ofstream::binary );
+		uint32_t nr_mesh_scalings;
+		scene_file >> nr_mesh_scalings;
+		std::vector<unsigned char> mesh_types;
+		std::vector<Vector> mesh_scalings(nr_mesh_scalings);
+		scene_file.read((char*)mesh_scalings.data(), sizeof(Vector) * mesh_scalings.size());
+		uint32_t hull_vertices_size;
+		scene_file >> hull_vertices_size;
+		hull.resize(hull_vertices_size);
+		scene_file.read((char*)hull.data(), sizeof(Vector2) * hull.size());
+		uint32_t nr_of_machines;
+		scene_file >> nr_of_machines;
+		mesh_types.resize(nr_of_machines);
+		scene_file.read((char*)mesh_types.data(), sizeof(unsigned char) * mesh_types.size());
+
+		struct MachineDef
+		{
+			Vector scaling;
+		};
+
+		struct Machine
+		{
+			Vector position;
+			Vector rotation;
+			unsigned def_index;
+		};
+
+		std::vector<MachineDef> machine_definitions(mesh_scalings.size());
+		for (size_t i = 0; i < machine_definitions.size(); i++)
+			machine_definitions[i].scaling = mesh_scalings[i];
+		
+		std::vector<Machine> machines(nr_of_machines);
+		for (size_t i = 0; i < nr_of_machines; i++)
+		{
+			Machine& machine = machines[i];
+			machine.position.y = 0;
+			machine.rotation.x = 0;
+			machine.rotation.z = 0;
+
+			machine.def_index = mesh_types[i];
+			scene_file >> machine.position.x;
+			scene_file >> machine.position.z;
+			scene_file >> machine.rotation.y;
+
+		}
+
+		scene_file.close();
 	}
 
 	void SceneGenerator::createMeshInstance(Mesh** mesh, const Vector& position, const Vector& rotation, const Vector& scaling,
@@ -102,5 +209,132 @@ namespace edt
 		instance_monochrome->calculateTransform();
 
 		instances_monochrome.push_back(instance_monochrome);
+	}
+
+	
+	void SceneGenerator::saveScene(const std::vector<MeshInstance*>& machines_monochrome, const std::vector<unsigned char>& mesh_types,
+		const std::vector<Vector>& mesh_scalings)
+	{
+		if (machines_monochrome.empty())
+			return;
+
+		std::vector<Vector2> positions;
+		const Mesh& mesh = *machines_monochrome.front()->model;
+
+		for (size_t i_0 = 0; i_0 < mesh.geometry.positions.size(); i_0++)
+		{
+			const Vector& position_3d = mesh.geometry.positions[i_0];
+			Vector2 position_2d = { position_3d.x, position_3d.z };
+			bool is_unique = true;
+
+			for (const Vector2& other_position_2d : positions)
+			{
+				if (position_2d == other_position_2d)
+				{
+					is_unique = false;
+					break;
+				}
+			}
+
+			if (is_unique)
+				positions.push_back(position_2d);
+		}
+
+		std::vector<Vector2> hull;
+		calculateConvexHull(positions, hull);
+		std::ofstream scene_file("scene_data_1.txt", std::ofstream::binary | std::ofstream::trunc);
+		//scene
+		scene_file << (uint32_t)mesh_scalings.size();
+		scene_file.write((const char*)mesh_scalings.data(), sizeof(Vector) * mesh_scalings.size());
+		//convex hull - 2d representation
+		scene_file << (uint32_t)hull.size();
+		scene_file.write((const char*)hull.data(), sizeof(Vector2) * hull.size());
+
+		scene_file << (uint32_t)mesh_types.size();
+		scene_file.write((const char*)mesh_types.data(), sizeof(unsigned char)* mesh_types.size());
+		for (size_t i=0; i < machines_monochrome.size(); i++)
+		{
+			const MeshInstance* machine = machines_monochrome[i];
+			scene_file << machine->translation.x;
+			scene_file << machine->translation.z;
+			scene_file << machine->rotation.y;
+		}
+
+		scene_file.close();
+	}
+
+	void SceneGenerator::calculateConvexHull(const std::vector<Vector2>& all_points, std::vector<Vector2>& hull)
+	{
+		Vector2 com = { 0, 0 };
+
+		for (const Vector2& position : all_points)
+			com += position;
+		
+		com /= (float)all_points.size(); //center of mass
+
+		size_t i_last_hull_vertex = 0;
+		float longest_distance_sq = 0;
+		for (size_t i = 0; i < all_points.size(); i++)
+		{
+			float test_distance_sq = all_points[i].distanceSq(com);
+			if (test_distance_sq > longest_distance_sq)
+			{
+				longest_distance_sq = test_distance_sq;
+				i_last_hull_vertex = i;
+			}
+		}
+
+		hull.push_back(all_points[i_last_hull_vertex]);
+		std::vector<bool> hull_vertices_lookup(all_points.size(), false);
+		hull_vertices_lookup[i_last_hull_vertex] = true;
+
+		for (;;)
+		{
+			float biggest_cross_product = 0;
+			Vector2 p_0;
+			Vector2 dir_0;
+			size_t i_p_0 = i_last_hull_vertex;
+
+			for (size_t i = 0; i < all_points.size(); i++)
+			{
+				if (!hull_vertices_lookup[i])
+				{
+					p_0 = all_points[i];
+					dir_0 = p_0 - hull.back();
+					dir_0.normalize();
+					i_p_0 = i;
+
+					for (size_t j = 0; j < all_points.size(); j++)
+					{
+						if (j != i && j != i_last_hull_vertex)
+						{
+							const Vector2& p_1 = all_points[j];
+							Vector2 dir_1 = p_1 - hull.back();
+							dir_1.normalize();
+							float test_cross = dir_0.cross(dir_1);
+
+							if (test_cross > biggest_cross_product)
+							{
+								p_0 = p_1;
+								dir_0 = dir_1;
+								i_p_0 = j;
+								biggest_cross_product = test_cross;
+							}
+						}
+					}
+
+					break;
+				}
+			}
+
+			if (hull_vertices_lookup[i_p_0])
+				break;
+			else
+			{
+				hull_vertices_lookup[i_p_0] = true;
+				hull.push_back(p_0);
+				i_last_hull_vertex = i_p_0;
+			}
+		}
 	}
 }
