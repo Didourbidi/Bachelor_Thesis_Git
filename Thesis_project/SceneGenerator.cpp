@@ -56,7 +56,7 @@ namespace edt
 		std::vector<MeshInstance*>& machines_monochrome)
 	{
 		srand(1);
-		float grid_size = 100; //number of squares
+		float grid_size = 50; //number of squares
 		size_t number_of_squares = (size_t)(grid_size * grid_size);
 		size_t wanted_nr_of_machines = 2 * (size_t) (number_of_squares * 0.5f);
 		//size_t wanted_nr_of_machines = 10;
@@ -133,11 +133,17 @@ namespace edt
 		create_machine_cluster({ -10, 0, -10 });
 		create_machine_cluster({ -10, 0, 10 });*/
 
-		saveScene(machines_monochrome, mesh_types, mesh_scalings);
+		//saveScene(machines_monochrome, mesh_types, mesh_scalings);
+		//loadScene("scene_data_1.txt");
 	}
 
 	void SceneGenerator::loadScene(const char* file_name)
 	{
+		struct Vector2
+		{
+			float x, y;
+		};
+
 		std::vector<Vector2> hull;
 
 		std::ifstream scene_file(file_name, std::ofstream::binary );
@@ -180,13 +186,40 @@ namespace edt
 			machine.rotation.z = 0;
 
 			machine.def_index = mesh_types[i];
-			scene_file >> machine.position.x;
-			scene_file >> machine.position.z;
-			scene_file >> machine.rotation.y;
-
+			scene_file.read((char*)&machine.position.x, sizeof(float));
+			scene_file.read((char*)&machine.position.z, sizeof(float));
+			scene_file.read((char*)&machine.rotation.y, sizeof(float));
 		}
-
 		scene_file.close();
+
+		struct point2d 
+		{
+			float x, y;
+		};
+		struct polygon2d 
+		{
+			int nvertices;
+			point2d* vertices;
+		};
+
+		std::vector<polygon2d> machines_2d(machines.size());
+		for (size_t i = 0; i < machines_2d.size(); i++)
+		{
+			polygon2d& poly2d = machines_2d[i];
+			const Machine& machine = machines[i];
+			poly2d.nvertices = (int)hull.size();
+			poly2d.vertices = (point2d*)malloc(sizeof(point2d) * poly2d.nvertices);
+
+			for (size_t j = 0; j < (size_t)poly2d.nvertices; j++)
+			{
+				point2d position2d;
+				position2d.x = hull[j].x * cos(machine.rotation.y) + hull[j].y * sin(machine.rotation.y);
+				position2d.y = -hull[j].x * sin(machine.rotation.y) + hull[j].y * cos(machine.rotation.y);
+				poly2d.vertices[j] = position2d;
+				poly2d.vertices[j].x += machine.position.x;
+				poly2d.vertices[j].y += machine.position.z;
+			}
+		}
 	}
 
 	void SceneGenerator::createMeshInstance(Mesh** mesh, const Vector& position, const Vector& rotation, const Vector& scaling,
@@ -255,9 +288,9 @@ namespace edt
 		for (size_t i=0; i < machines_monochrome.size(); i++)
 		{
 			const MeshInstance* machine = machines_monochrome[i];
-			scene_file << machine->translation.x;
-			scene_file << machine->translation.z;
-			scene_file << machine->rotation.y;
+			scene_file.write((const char*)&machine->translation.x, sizeof(float) );
+			scene_file.write((const char*)&machine->translation.z, sizeof(float));
+			scene_file.write((const char*)&machine->rotation.y, sizeof(float));
 		}
 
 		scene_file.close();

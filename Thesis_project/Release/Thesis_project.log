@@ -1,3 +1,11 @@
 ﻿cl : command line warning D9025: overriding '/sdl' with '/GS-'
-  VisibilitySolver2D.cpp
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\ostream(610,1): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+cl : command line warning D9025: overriding '/sdl' with '/GS-'
+cl : command line warning D9025: overriding '/sdl' with '/GS-'
+  VisibilitySolver3D.cpp
+  main.cpp
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\ostream(610,1): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc (compiling source file VisibilitySolver3D.cpp)
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\ostream(610,1): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc (compiling source file main.cpp)
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
+  Generating code
+  Finished generating code
+  Thesis_project.vcxproj -> E:\MDH\Bachelor Thesis\Thesis_project\Release\Thesis_project.exe

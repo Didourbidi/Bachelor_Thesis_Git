@@ -11,12 +11,12 @@ namespace edt
 		frame_buffer(0),
 		renderer(nullptr),
 		mip_level(0),
-		last_mip_resolution(16)
+		last_mip_resolution(LAST_MIP_RESOLUTION)
 	{
 		draw_buffers[0] = GL_COLOR_ATTACHMENT0;
 		createProjectionMatrix();
 		createViewMatrices();
-		static_assert(sizeof(VisibilitySolver3D::Pixel) == sizeof(uint8_t) && alignof(VisibilitySolver3D::Pixel) == alignof(uint8_t));
+		static_assert(sizeof(VisibilitySolver3D::Pixel) == sizeof(PIXEL_TYPE) && alignof(VisibilitySolver3D::Pixel) == alignof(PIXEL_TYPE));
 	}
 
 	VisibilitySolver3D::~VisibilitySolver3D(){} //destructor definition
@@ -77,10 +77,10 @@ namespace edt
 			if (!machines.empty())
 			{
 				renderer->setActiveShader(machines.front()->model->material.shader_id);
-				for(int i_machine = 0; i_machine < machines.size(); i_machine += 255) //255 is the limit for opengl instancing
+				for(int i_machine = 0; i_machine < (int)machines.size(); i_machine += 255) //255 is the limit for opengl instancing
 				{
 					int nr_of_machines = 255;
-					if (i_machine + nr_of_machines > machines.size())
+					if (i_machine + nr_of_machines > (int)machines.size())
 						nr_of_machines = machines.size() - i_machine;
 
 					renderer->send_matrices_to_shader("model_matrix", instance_transforms.data() + i_machine, nr_of_machines);
@@ -130,8 +130,8 @@ namespace edt
 
 		glGetTexImage(GL_TEXTURE_2D,
 			mip_level,
-			GL_RED,
-			GL_UNSIGNED_BYTE,
+			RENDER_TARGET_PIXEL_FORMAT, // format
+			RENDER_TARGET_PIXEL_DATA_TYPE, // type
 			texture_data.data());
 
 		for (const Pixel& pixel : texture_data)
@@ -157,7 +157,12 @@ namespace edt
 			glBindTexture(GL_TEXTURE_2D, render_target);
 
 			// Give an empty image to OpenGL ( the last "0" )
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, resolution, resolution, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, 
+				RENDER_TARGET_INTERNAL_FORMAT, // internalformat
+				resolution, resolution, 0, 
+				RENDER_TARGET_PIXEL_FORMAT, // format
+				RENDER_TARGET_PIXEL_DATA_TYPE, // type
+				0);
 			glGenerateMipmap(GL_TEXTURE_2D);
 
 			// Poor filtering. Needed !

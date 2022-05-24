@@ -2,6 +2,20 @@
 #include "common.h"
 #include "algebra.h"
 
+#if 1
+#define RENDER_TARGET_PIXEL_FORMAT GL_RED
+#define RENDER_TARGET_PIXEL_DATA_TYPE GL_UNSIGNED_BYTE
+#define RENDER_TARGET_INTERNAL_FORMAT GL_RED
+#define PIXEL_TYPE uint8_t
+#define LAST_MIP_RESOLUTION 4
+#else
+#define RENDER_TARGET_PIXEL_FORMAT GL_RED
+#define RENDER_TARGET_PIXEL_DATA_TYPE GL_FLOAT
+#define RENDER_TARGET_INTERNAL_FORMAT GL_R32F
+#define PIXEL_TYPE float
+#define LAST_MIP_RESOLUTION 4
+#endif
+
 namespace edt
 {
 	class Renderer;
@@ -23,7 +37,7 @@ namespace edt
 	private:
 		struct Pixel
 		{
-			uint8_t r;
+			PIXEL_TYPE r;
 		};
 
 		void createRenderTargets();
