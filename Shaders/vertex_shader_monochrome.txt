@@ -1,16 +1,18 @@
 #version 420 core
 
-in vec3 vPos; //local
+in vec3 vPos; //local´
 
 uniform mat4 proj_view_matrix;
 uniform mat4 model_matrix[255];
 
+flat out int instance_id;
 
 void main(void)
 {
+	instance_id = gl_InstanceID;
 	//vertex position in world space
 	vec4 world_pos = model_matrix[gl_InstanceID] * vec4(vPos, 1.0f);
 	
 	//multiply view-projection transform with position matrix 
-	gl_Position = proj_view_matrix *  world_pos ; //vertex position in screen coordinates
+	gl_Position = proj_view_matrix * world_pos; //vertex position in screen coordinates
 }

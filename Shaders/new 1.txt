@@ -1,0 +1,5 @@
+Covex hull //2d representation of a 3D object
+	Calculate center of mass
+	Select point furthest away from center of mass
+	Find the point who's vector from point 0 has the most positive cross-product //which point is on the right
+	

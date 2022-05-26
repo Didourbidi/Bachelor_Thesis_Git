@@ -173,6 +173,7 @@ namespace edt
 		scene_generator.generateScene(meshes.room, meshes.inner_wall_1, meshes.l_shape, meshes.machine1, walls, walls_monochrome, machines, machines_monochrome);
 		single_scene_renderer.init(&renderer, edt::global.viewport.screen_width, edt::global.viewport.screen_height, &camera);
 		panoramic_scene_renderer.init(&renderer, edt::global.viewport.screen_width, edt::global.viewport.screen_height, &camera);
+		drawScene();
 	}
 
 	void cleanUp(void) 

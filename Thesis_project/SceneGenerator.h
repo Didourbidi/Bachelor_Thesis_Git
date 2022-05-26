@@ -34,8 +34,8 @@ namespace edt
 		static void createMeshInstance( Mesh** mesh, const Vector& position, const Vector& rotation, const Vector& scaling,
 			std::vector<MeshInstance*>& instances_rgb, std::vector<MeshInstance*>& instances_monochrome);
 
-		void saveScene(const std::vector<MeshInstance*>& machines_monochrome, const std::vector<unsigned char>& mesh_types, 
-			const std::vector<Vector>& mesh_scalings);
+		void saveScene(const char* file_name, const std::vector<MeshInstance*>& machines_monochrome, 
+			const std::vector<unsigned char>& mesh_types, const std::vector<Vector>& mesh_scalings);
 
 		void calculateConvexHull(const std::vector<Vector2>& all_points, std::vector<Vector2>& hull );
 

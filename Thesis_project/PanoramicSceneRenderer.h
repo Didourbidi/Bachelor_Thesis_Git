@@ -32,6 +32,6 @@ namespace edt
 		int back_buffer_resolution[2];
 		int viewport_resolution[2];
 		const Camera* camera;
-		Viewport viewports[6];
+		Viewport viewports[4];
 	};
 }

@@ -14,7 +14,27 @@ namespace edt
 			return { -x, -y, -z };
 		}
 
+		Vector operator - ( const Vector& rhs ) const
+		{
+			return { x - rhs.x, y - rhs.y, z - rhs. z };
+		}
+
 		float x, y, z;
+	};
+
+	struct Vector2
+	{
+		Vector2 operator - (const Vector2& rhs) const
+		{
+			return { x - rhs.x, y - rhs.y };
+		}
+
+		float dot(const Vector2& rhs) const
+		{
+			return x * rhs.x + y * rhs.y;
+		}
+
+		float x, y;
 	};
 
 	struct HomVector

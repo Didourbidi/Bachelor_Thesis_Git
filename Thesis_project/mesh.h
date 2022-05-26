@@ -10,7 +10,7 @@ namespace edt
 {
 	struct Triangle
 	{
-		int indices[3];
+		unsigned short indices[3];
 	};
 
 	struct Mesh

@@ -43,6 +43,27 @@ namespace edt
 		glBindVertexArray(0);
 	}
 
+	void Renderer::prepareBatch(const MeshInstance& mesh_instance)
+	{
+		if (matrices_dirty)
+			calculateProjViewMatrix();
+
+		if (shader_dirty)
+		{
+			applyGlobalMatrices();
+			shader_dirty = false;
+		}
+
+		batch_model_matrix_handle = glGetUniformLocation(mesh_instance.model->material.shader_id, "model_matrix");
+		glBindVertexArray(mesh_instance.model->vertex_array_object);
+	}
+
+	void Renderer::batchRenderMesh(const MeshInstance& mesh_instance)
+	{
+		glUniformMatrix4fv(batch_model_matrix_handle, 1, GL_FALSE, mesh_instance.transform.e);
+		glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_SHORT, NULL);
+	}
+
 	void Renderer::renderMesh(const MeshInstance& mesh_instance)
 	{
 		if (matrices_dirty)
@@ -62,11 +83,11 @@ namespace edt
 		glBindVertexArray(mesh_instance.model->vertex_array_object);
 
 		// Draw all triangles
-		glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL);
+		glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_SHORT, NULL);
 		glBindVertexArray(0);
 	}
 
-	void Renderer::renderMeshInstances(const MeshInstance& mesh_instance, const int& count)
+	void Renderer::renderMeshInstances(const Mesh& mesh, const int& count)
 	{
 		if (matrices_dirty)
 			calculateProjViewMatrix();
@@ -78,11 +99,11 @@ namespace edt
 		}
 
 		// Select current resources 
-		glBindVertexArray(mesh_instance.model->vertex_array_object);
+		glBindVertexArray(mesh.vertex_array_object);
 
 		// Draw all triangles
 		//glDrawElements(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL);
-		glDrawElementsInstanced(GL_TRIANGLES, mesh_instance.model->geometry.triangles.size() * 3, GL_UNSIGNED_INT, NULL, count);
+		glDrawElementsInstanced(GL_TRIANGLES, mesh.geometry.triangles.size() * 3, GL_UNSIGNED_SHORT, NULL, count);
 		glBindVertexArray(0);
 	}
 
@@ -103,6 +124,15 @@ namespace edt
 
 		//send information to shader
 		glUniform1f(h_handle, value);
+	}
+
+	void Renderer::send_int_to_shader(const char* name, const int& value)
+	{
+		// gives a handle to the specific piece of data which we will use in order to access it later
+		GLint h_handle = glGetUniformLocation(shader_id, name);
+
+		//send information to shader
+		glUniform1i(h_handle, value);
 	}
 
 	void Renderer::send_matrices_to_shader(const char* name, const Matrix* p_values, const int& count)

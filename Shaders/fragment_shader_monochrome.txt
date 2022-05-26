@@ -1,8 +1,15 @@
 #version 420 core
 
-out float fColor;
+flat in int instance_id;
+
+uniform struct Globals
+{
+	int instance_offset;
+} globals;
+
+out int fColor;
 
 void main(void)
 {
-	fColor = 1.0f;
+	fColor = instance_id + globals.instance_offset + 1;
 }
